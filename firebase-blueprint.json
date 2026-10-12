@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "user": {
+      "title": "UserProfile",
+      "description": "User profile and personal preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique Firebase Auth user ID" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Display name or nickname" },
+        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" }
+      },
+      "required": ["uid"]
+    },
+    "diaryEntry": {
+      "title": "DiaryEntry",
+      "description": "A single personal reflection on a language barrier challenge",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique entry identifier" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "challengeId": { "type": "string", "description": "ID of attempted challenge" },
+        "challengeTitle": { "type": "string", "description": "Title of challenge" },
+        "challengeDifficulty": { "type": "string", "enum": ["Gentle", "Brave", "Bold"], "description": "Difficulty tier" },
+        "date": { "type": "string", "description": "Date in YYYY-MM-DD format" },
+        "timestamp": { "type": "number", "description": "Epoch timestamp in milliseconds" },
+        "description": { "type": "string", "description": "Written reflection story" },
+        "beforeMood": { "type": "string", "description": "Feeling before challenge" },
+        "afterMood": { "type": "string", "description": "Feeling after challenge" },
+        "surprise": { "type": "string", "description": "What surprised the user" },
+        "photoUrl": { "type": "string", "description": "Compressed photo data URL or image link" },
+        "languageAttempted": { "type": "string", "description": "Target foreign language" },
+        "wordsSpoken": { "type": "string", "description": "Foreign phrases attempted" },
+        "isFavorite": { "type": "boolean", "description": "Favorited reflection" }
+      },
+      "required": ["id", "userId", "challengeId", "challengeTitle", "date", "timestamp", "description"]
+    },
+    "customChallenge": {
+      "title": "CustomChallenge",
+      "description": "User created custom empathy challenge",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique challenge identifier" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "title": { "type": "string", "description": "Title of challenge" },
+        "instructions": { "type": "string", "description": "Challenge steps" },
+        "difficulty": { "type": "string", "enum": ["Gentle", "Brave", "Bold"], "description": "Difficulty level" },
+        "estimatedTime": { "type": "string", "description": "Time needed" },
+        "whyThisMatters": { "type": "string", "description": "Empathy insight" }
+      },
+      "required": ["id", "userId", "title", "instructions", "difficulty"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profile and account settings"
+    },
+    "/users/{userId}/entries/{entryId}": {
+      "schema": "diaryEntry",
+      "description": "Individual personal challenge diary entries owned by the user"
+    },
+    "/users/{userId}/customChallenges/{challengeId}": {
+      "schema": "customChallenge",
+      "description": "Custom challenges created by the user"
+    }
+  }
+}

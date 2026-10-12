@@ -1,0 +1,6 @@
+{
+  "name": "Tongue-Tied",
+  "description": "A solo daily empathy challenge app exploring the language barrier through real-world micro-interactions and personal journaling.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
