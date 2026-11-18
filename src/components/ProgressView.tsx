@@ -178,6 +178,15 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
       
       {/* Title */}
       <div>
+        {onGoToToday && (
+          <button
+            type="button"
+            onClick={onGoToToday}
+            className="text-xs text-sky-700 hover:underline font-semibold mb-1 flex items-center gap-1 cursor-pointer"
+          >
+            <span>← Back to Today</span>
+          </button>
+        )}
         <h1 className="text-xl sm:text-2xl font-serif font-bold text-slate-900">
           Your Progress
         </h1>

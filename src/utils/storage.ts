@@ -1,4 +1,7 @@
-import { Challenge, DiaryEntry, MoodType, AppAccount } from '../types';
+import { 
+  Challenge, DiaryEntry, MoodType, AppAccount, 
+  UserPreferences, ThemePreferences, UsefulPhrase 
+} from '../types';
 import { INITIAL_CHALLENGES } from '../data/initialChallenges';
 import { db, doc, setDoc, deleteDoc, collection, query, orderBy, onSnapshot, getDocs } from '../lib/firebase';
 
@@ -12,6 +15,10 @@ const STORAGE_KEYS = {
   CURRENT_ACCOUNT: 'tt_current_account_v1',
   LOCAL_ACCOUNTS: 'tt_local_accounts_v1',
   CHOSEN_LANGUAGE: 'tt_chosen_language_v1',
+  USER_PREFERENCES: 'tt_user_preferences_v2',
+  THEME_PREFERENCES: 'tt_theme_preferences_v2',
+  CUSTOM_PHRASES: 'tt_custom_phrases_v2',
+  ACTIVE_SEQUENCE: 'tt_active_sequence_v2',
 };
 
 // Safe JSON parse
@@ -463,3 +470,125 @@ export function getMoodLabel(mood: string): string {
   const found = all.find(m => m.id === mood || m.label.toLowerCase() === mood.toLowerCase());
   return found ? found.label : mood;
 }
+
+// -------------------------------------------------------------
+// USER PREFERENCES
+// -------------------------------------------------------------
+export const DEFAULT_PREFERENCES: UserPreferences = {
+  language: 'Spanish',
+  proficiency: 'Absolute Beginner',
+  topics: ['Coffee & Cafés', 'Food & Markets', 'Everyday Errands'],
+  difficultyPreference: 'Gentle',
+  socialSettings: 'Relaxed neighborhood bakery or quiet coffee shop',
+  communityContext: 'Keep interactions polite, low-stakes, and friendly. Respect personal space and gentle body language.',
+};
+
+export function getUserPreferences(): UserPreferences {
+  const stored = getJson<Partial<UserPreferences> | null>(STORAGE_KEYS.USER_PREFERENCES, null);
+  if (!stored) {
+    const lang = getChosenLanguage() || 'Spanish';
+    return { ...DEFAULT_PREFERENCES, language: lang };
+  }
+  return {
+    ...DEFAULT_PREFERENCES,
+    ...stored,
+    language: stored.language || getChosenLanguage() || 'Spanish',
+  };
+}
+
+export function saveUserPreferences(prefs: UserPreferences): void {
+  setJson(STORAGE_KEYS.USER_PREFERENCES, prefs);
+  if (prefs.language) {
+    saveChosenLanguage(prefs.language);
+  }
+}
+
+// -------------------------------------------------------------
+// THEME & DISPLAY PREFERENCES
+// -------------------------------------------------------------
+export const DEFAULT_THEME_PREFERENCES: ThemePreferences = {
+  colorTheme: 'sky',
+  displayFormat: 'comfortable',
+};
+
+export function getThemePreferences(): ThemePreferences {
+  return getJson<ThemePreferences>(STORAGE_KEYS.THEME_PREFERENCES, DEFAULT_THEME_PREFERENCES);
+}
+
+export function saveThemePreferences(prefs: ThemePreferences): void {
+  setJson(STORAGE_KEYS.THEME_PREFERENCES, prefs);
+}
+
+// -------------------------------------------------------------
+// CUSTOM & SAVED PRACTICE PHRASES
+// -------------------------------------------------------------
+export function getCustomPhrases(): UsefulPhrase[] {
+  return getJson<UsefulPhrase[]>(STORAGE_KEYS.CUSTOM_PHRASES, []);
+}
+
+export function saveCustomPhrases(phrases: UsefulPhrase[]): void {
+  setJson(STORAGE_KEYS.CUSTOM_PHRASES, phrases);
+}
+
+export function addCustomPhrase(phrase: UsefulPhrase): void {
+  const list = getCustomPhrases();
+  const existingIdx = list.findIndex(p => p.id === phrase.id);
+  if (existingIdx >= 0) {
+    list[existingIdx] = phrase;
+  } else {
+    list.unshift(phrase);
+  }
+  saveCustomPhrases(list);
+}
+
+export function deleteCustomPhrase(id: string): void {
+  const list = getCustomPhrases().filter(p => p.id !== id);
+  saveCustomPhrases(list);
+}
+
+// -------------------------------------------------------------
+// ACTIVE ARRANGE SEQUENCE
+// -------------------------------------------------------------
+export function getActiveSequence(): Challenge[] | null {
+  return getJson<Challenge[] | null>(STORAGE_KEYS.ACTIVE_SEQUENCE, null);
+}
+
+export function saveActiveSequence(sequence: Challenge[] | null): void {
+  setJson(STORAGE_KEYS.ACTIVE_SEQUENCE, sequence);
+}
+
+// -------------------------------------------------------------
+// UPDATE CUSTOM CHALLENGE
+// -------------------------------------------------------------
+export function updateCustomChallenge(challenge: Challenge): void {
+  const customList = getCustomChallenges();
+  const index = customList.findIndex(c => c.id === challenge.id);
+  if (index >= 0) {
+    customList[index] = challenge;
+  } else {
+    customList.unshift(challenge);
+  }
+  saveCustomChallenges(customList);
+}
+
+// -------------------------------------------------------------
+// PROFILE UPDATE HELPER
+// -------------------------------------------------------------
+export function updateUserProfile(displayName: string): AppAccount {
+  const current = getCurrentAccount() || {
+    uid: 'usr_' + Math.random().toString(36).substring(2, 9),
+    email: 'explorer@tonguetied.app',
+    displayName: 'Explorer',
+    createdAt: Date.now(),
+  };
+
+  const updated: AppAccount = {
+    ...current,
+    displayName: displayName.trim() || 'Explorer',
+  };
+
+  saveCurrentAccount(updated);
+  return updated;
+}
+
+

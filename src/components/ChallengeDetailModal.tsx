@@ -47,10 +47,15 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-sky-50/50">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${difficultyColors[challenge.difficulty]}`}>
               {challenge.difficulty}
             </span>
+            {challenge.setting && (
+              <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 capitalize">
+                {challenge.setting}
+              </span>
+            )}
             <span className="text-slate-300 text-xs">·</span>
             <span className="flex items-center gap-1 text-xs text-slate-600">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -88,11 +93,13 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
             </p>
           </div>
 
-          {/* Why it matters */}
-          <div className="bg-sky-50/60 rounded-2xl p-3.5 border border-sky-100 text-xs text-slate-700">
-            <span className="font-semibold text-sky-900 block mb-0.5">Why this matters:</span>
-            <p className="italic">{challenge.whyThisMatters}</p>
-          </div>
+          {/* Why this helps (optional) */}
+          {challenge.whyThisMatters && (
+            <div className="bg-sky-50/60 rounded-2xl p-3.5 border border-sky-100 text-xs text-slate-700">
+              <span className="font-semibold text-sky-900 block mb-0.5">Why this helps:</span>
+              <p className="italic">{challenge.whyThisMatters}</p>
+            </div>
+          )}
 
           {/* Tip & Safety Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">

@@ -4,18 +4,62 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-serif: 'Newsreader', Georgia, Cambria, 'Times New Roman', serif;
+    --color-theme-primary: #0284c7;
+    --color-theme-bg: #f8fafc;
   }
 
   body {
     font-family: var(--font-sans);
+    background-color: var(--color-theme-bg);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     touch-action: manipulation;
+    transition: background-color 0.25s ease-in-out, color 0.25s ease-in-out;
   }
 
   h1, h2, h3, .font-serif {
     font-family: var(--font-serif);
   }
+}
+
+/* Theme color variables */
+:root[data-theme="sky"], [data-theme="sky"] {
+  --color-theme-primary: #0284c7;
+  --color-theme-bg: #f8fafc;
+}
+
+:root[data-theme="rose"], [data-theme="rose"] {
+  --color-theme-primary: #e11d48;
+  --color-theme-bg: #fff8f8;
+}
+
+:root[data-theme="sage"], [data-theme="sage"] {
+  --color-theme-primary: #059669;
+  --color-theme-bg: #f6f9f6;
+}
+
+:root[data-theme="amber"], [data-theme="amber"] {
+  --color-theme-primary: #d97706;
+  --color-theme-bg: #fffdf7;
+}
+
+:root[data-theme="lavender"], [data-theme="lavender"] {
+  --color-theme-primary: #7c3aed;
+  --color-theme-bg: #faf8ff;
+}
+
+/* Format Spacing Rules */
+[data-format="compact"] .format-spacious {
+  display: none !important;
+}
+
+[data-format="compact"] .format-py {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+[data-format="comfortable"] .format-compact-only {
+  display: none !important;
 }
 
 /* Hide scrollbars for clean tab rows */

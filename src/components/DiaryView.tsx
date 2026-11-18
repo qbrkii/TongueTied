@@ -14,6 +14,7 @@ interface DiaryViewProps {
   onSelectEntry: (entry: DiaryEntry) => void;
   onNewEntry: () => void;
   onToggleFavorite: (id: string) => void;
+  onBackToToday?: () => void;
 }
 
 export const DiaryView: React.FC<DiaryViewProps> = ({
@@ -21,6 +22,7 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
   onSelectEntry,
   onNewEntry,
   onToggleFavorite,
+  onBackToToday,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterFavorites, setFilterFavorites] = useState(false);
@@ -62,6 +64,15 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
       {/* Header & Actions */}
       <div className="pt-1 flex items-center justify-between">
         <div>
+          {onBackToToday && (
+            <button
+              type="button"
+              onClick={onBackToToday}
+              className="text-xs text-sky-700 hover:underline font-semibold mb-1 flex items-center gap-1 cursor-pointer"
+            >
+              <span>← Back to Today</span>
+            </button>
+          )}
           <h1 className="text-xl sm:text-2xl font-serif font-bold text-slate-900">
             Diary
           </h1>
