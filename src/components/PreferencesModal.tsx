@@ -148,9 +148,10 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                     onClick={() => setLanguage(pack.name)}
                     className={`flex items-center gap-1.5 p-2 rounded-xl border text-xs font-medium transition cursor-pointer ${
                       isSelected
-                        ? 'bg-sky-600 text-white border-sky-600 shadow-2xs'
+                        ? 'text-white border-transparent shadow-2xs'
                         : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                     }`}
+                    style={isSelected ? { backgroundColor: 'var(--color-theme-primary)' } : undefined}
                   >
                     <span className="text-sm">{pack.flag}</span>
                     <span className="truncate">{pack.name}</span>
@@ -327,7 +328,8 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+            className="px-5 py-2 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+            style={{ backgroundColor: 'var(--color-theme-primary)' }}
           >
             Save Preferences
           </button>

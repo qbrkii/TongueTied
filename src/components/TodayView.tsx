@@ -13,6 +13,7 @@ interface TodayViewProps {
   onLogExperience: () => void;
   onViewEntry: (entry: DiaryEntry) => void;
   onOpenMenu: () => void;
+  onOpenSafety?: () => void;
   onResetToUnaccepted?: () => void;
 }
 
@@ -26,6 +27,7 @@ export const TodayView: React.FC<TodayViewProps> = ({
   onLogExperience,
   onViewEntry,
   onOpenMenu,
+  onOpenSafety,
 }) => {
   const activeColor = themePreferences?.colorTheme || 'sky';
   const format = themePreferences?.displayFormat || 'comfortable';
@@ -227,7 +229,19 @@ export const TodayView: React.FC<TodayViewProps> = ({
 
       {/* Subtle footer credit / spacing */}
       <footer className="pt-4 pb-2 text-center text-[11px] text-slate-400 select-none">
-        Low-pressure micro-empathy practice
+        <span>Low-pressure micro-empathy practice</span>
+        {onOpenSafety && (
+          <>
+            <span className="mx-1.5">·</span>
+            <button
+              type="button"
+              onClick={onOpenSafety}
+              className="underline underline-offset-2 hover:text-slate-600 transition cursor-pointer"
+            >
+              Safety &amp; concern
+            </button>
+          </>
+        )}
       </footer>
 
     </div>

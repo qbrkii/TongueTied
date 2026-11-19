@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, User as UserIcon, Palette, Layout, 
-  Check, RotateCcw, Sparkles, CheckCircle2
+import {
+  X,
+  User as UserIcon,
+  Palette,
+  Layout,
+  Check,
+  RotateCcw,
+  CheckCircle2,
+  LogOut,
+  LogIn,
+  Mail,
+  CloudCheck,
 } from 'lucide-react';
 import { AppAccount, ThemePreferences, ColorTheme, DisplayFormat } from '../types';
-import { COLOR_THEME_LIST, getThemeConfig, DEFAULT_THEME_PREFERENCES } from '../utils/theme';
+import { COLOR_THEME_LIST, getThemeConfig } from '../utils/theme';
 
 interface ProfileAppearanceModalProps {
   isOpen: boolean;
@@ -14,6 +23,8 @@ interface ProfileAppearanceModalProps {
   onUpdateProfileName: (name: string) => void;
   onSaveTheme: (prefs: ThemePreferences) => void;
   onResetToDefaultAppearance: () => void;
+  onSignOut: () => void;
+  onOpenAuth?: () => void;
   practiceLanguage?: string;
   completedCount?: number;
   currentStreak?: number;
@@ -27,6 +38,8 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
   onUpdateProfileName,
   onSaveTheme,
   onResetToDefaultAppearance,
+  onSignOut,
+  onOpenAuth,
   practiceLanguage = 'Spanish',
   completedCount = 0,
   currentStreak = 0,
@@ -70,7 +83,7 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-      <div 
+      <div
         className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 text-slate-800 relative flex flex-col max-h-[92vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
@@ -81,7 +94,7 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
               Profile & Appearance
             </h2>
             <p className="text-[11px] text-slate-500">
-              Customize colors, layout density, and your learner profile
+              Customize colors, layout density, and your account
             </p>
           </div>
           <button
@@ -100,7 +113,7 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
             onClick={() => setActiveTab('appearance')}
             className={`pb-2.5 px-4 text-xs font-semibold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'appearance'
-                ? `border-slate-900 text-slate-900`
+                ? 'border-slate-900 text-slate-900'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -113,32 +126,30 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
             onClick={() => setActiveTab('profile')}
             className={`pb-2.5 px-4 text-xs font-semibold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'profile'
-                ? `border-slate-900 text-slate-900`
+                ? 'border-slate-900 text-slate-900'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <UserIcon className="w-3.5 h-3.5" />
-            <span>Profile Details</span>
+            <span>Account & Profile</span>
           </button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
-          
           {/* TAB 1: APPEARANCE & THEMES */}
           {activeTab === 'appearance' && (
             <div className="space-y-6">
-              
               {/* Live Active Status Summary */}
-              <div 
-                className="p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between"
+              <div
+                className="p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between gap-2"
                 style={{
                   backgroundColor: currentThemeConfig.bgHex,
                   borderColor: currentThemeConfig.hex + '40',
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-xs font-serif font-bold text-sm"
                     style={{ backgroundColor: currentThemeConfig.hex }}
                   >
@@ -149,7 +160,10 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                       Active: {currentThemeConfig.name}
                     </span>
                     <span className="text-[11px] text-slate-600 block">
-                      {themePreferences.displayFormat === 'comfortable' ? 'Comfortable (Spacious)' : 'Compact (Dense)'} • Applied across app
+                      {themePreferences.displayFormat === 'comfortable'
+                        ? 'Comfortable (Spacious)'
+                        : 'Compact (Dense)'}{' '}
+                      • Applied across app
                     </span>
                   </div>
                 </div>
@@ -157,7 +171,7 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                 <button
                   type="button"
                   onClick={onResetToDefaultAppearance}
-                  className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+                  className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer shadow-2xs shrink-0"
                   title="Reset to default theme & format"
                 >
                   <RotateCcw className="w-3 h-3 text-slate-500" />
@@ -195,7 +209,7 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                           boxShadow: isSelected ? `0 0 0 2px ${theme.hex}30` : undefined,
                         }}
                       >
-                        <div 
+                        <div
                           className="w-8 h-8 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-xs"
                           style={{ backgroundColor: theme.hex }}
                         >
@@ -208,9 +222,12 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                               {theme.name}
                             </span>
                             {isSelected && (
-                              <span 
+                              <span
                                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                                style={{ backgroundColor: theme.hex + '18', color: theme.hex }}
+                                style={{
+                                  backgroundColor: theme.hex + '18',
+                                  color: theme.hex,
+                                }}
                               >
                                 Active
                               </span>
@@ -239,7 +256,6 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Comfortable */}
                   <button
                     type="button"
                     onClick={() => handleSelectFormat('comfortable')}
@@ -249,16 +265,20 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
                     }`}
                     style={{
-                      borderColor: themePreferences.displayFormat === 'comfortable' ? currentThemeConfig.hex : undefined,
-                      boxShadow: themePreferences.displayFormat === 'comfortable' ? `0 0 0 2px ${currentThemeConfig.hex}30` : undefined,
+                      borderColor:
+                        themePreferences.displayFormat === 'comfortable'
+                          ? currentThemeConfig.hex
+                          : undefined,
+                      boxShadow:
+                        themePreferences.displayFormat === 'comfortable'
+                          ? `0 0 0 2px ${currentThemeConfig.hex}30`
+                          : undefined,
                     }}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        Comfortable
-                      </span>
+                      <span className="text-xs font-bold text-slate-900">Comfortable</span>
                       {themePreferences.displayFormat === 'comfortable' && (
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full flex items-center justify-center text-white"
                           style={{ backgroundColor: currentThemeConfig.hex }}
                         >
@@ -275,7 +295,6 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                     </div>
                   </button>
 
-                  {/* Compact */}
                   <button
                     type="button"
                     onClick={() => handleSelectFormat('compact')}
@@ -285,16 +304,20 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
                     }`}
                     style={{
-                      borderColor: themePreferences.displayFormat === 'compact' ? currentThemeConfig.hex : undefined,
-                      boxShadow: themePreferences.displayFormat === 'compact' ? `0 0 0 2px ${currentThemeConfig.hex}30` : undefined,
+                      borderColor:
+                        themePreferences.displayFormat === 'compact'
+                          ? currentThemeConfig.hex
+                          : undefined,
+                      boxShadow:
+                        themePreferences.displayFormat === 'compact'
+                          ? `0 0 0 2px ${currentThemeConfig.hex}30`
+                          : undefined,
                     }}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        Compact
-                      </span>
+                      <span className="text-xs font-bold text-slate-900">Compact</span>
                       {themePreferences.displayFormat === 'compact' && (
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full flex items-center justify-center text-white"
                           style={{ backgroundColor: currentThemeConfig.hex }}
                         >
@@ -312,89 +335,150 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
                   </button>
                 </div>
               </div>
-
             </div>
           )}
 
-          {/* TAB 2: PROFILE DETAILS */}
+          {/* TAB 2: ACCOUNT & PROFILE */}
           {activeTab === 'profile' && (
-            <div className="space-y-5">
-              
-              {/* Profile Card */}
-              <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-base shadow-xs"
-                    style={{ backgroundColor: currentThemeConfig.hex }}
-                  >
-                    {currentAccount?.displayName ? currentAccount.displayName.slice(0, 1).toUpperCase() : 'E'}
+            currentAccount ? (
+              <div className="space-y-5">
+                {/* Profile Card */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-base shadow-xs shrink-0"
+                      style={{ backgroundColor: currentThemeConfig.hex }}
+                    >
+                      {currentAccount.displayName
+                        ? currentAccount.displayName.slice(0, 1).toUpperCase()
+                        : 'E'}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-sm font-bold text-slate-900 block truncate">
+                        {currentAccount.displayName || 'Language Learner'}
+                      </span>
+                      {currentAccount.email && (
+                        <span className="text-[11px] text-slate-500 flex items-center gap-1 truncate">
+                          <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="truncate">{currentAccount.email}</span>
+                        </span>
+                      )}
+                      <span className="text-[11px] text-emerald-700 flex items-center gap-1 mt-0.5 font-medium">
+                        <CloudCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>Cloud progress synced • {practiceLanguage}</span>
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-sm font-bold text-slate-900 block">
-                      {currentAccount?.displayName || 'Language Learner'}
+
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-bold text-slate-800 block">
+                      {completedCount} Completed
                     </span>
-                    <span className="text-xs text-slate-500 block">
-                      Practicing {practiceLanguage}
+                    <span className="text-[10px] text-slate-500 block">
+                      {currentStreak} day streak
                     </span>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs font-bold text-slate-800 block">
-                    {completedCount} Completed
-                  </span>
-                  <span className="text-[10px] text-slate-500 block">
-                    {currentStreak} day streak
-                  </span>
+                {/* Edit Display Name */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                      Learner Profile
+                    </span>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Your name is saved to your account along with your diary, challenges, phrases, and theme preferences.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSaveName} className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                        Display Name
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        placeholder="e.g. Alex M."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                      />
+                    </div>
+
+                    {nameSavedNotice && (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs flex items-center gap-2 animate-fade-in">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>Name updated & synced to your account!</span>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full h-10 rounded-xl text-white font-medium text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                      style={{ backgroundColor: currentThemeConfig.hex }}
+                    >
+                      <span>Save Profile Name</span>
+                    </button>
+                  </form>
+                </div>
+
+                {/* Sign Out Action */}
+                <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">
+                      Switch or Sign Out
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">
+                      Your reflections and progress stay safely stored in your account
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onSignOut();
+                    }}
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shrink-0 shadow-2xs"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
               </div>
-
-              {/* Edit Display Name */}
-              <div className="p-5 rounded-2xl border border-slate-200 bg-white space-y-4">
+            ) : (
+              <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50/70 text-center space-y-4">
+                <div
+                  className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white shadow-xs"
+                  style={{ backgroundColor: currentThemeConfig.hex }}
+                >
+                  <UserIcon className="w-6 h-6" />
+                </div>
                 <div className="space-y-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                    Learner Profile
-                  </span>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Set how your name appears on your reflections and custom challenges.
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Save Your Progress
+                  </h3>
+                  <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
+                    Create a free account or sign in to save your diary reflections, track streaks, and personalize your cloud profile.
                   </p>
                 </div>
-
-                <form onSubmit={handleSaveName} className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
-                      Display Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      placeholder="e.g. Alex M."
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-                    />
-                  </div>
-
-                  {nameSavedNotice && (
-                    <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs flex items-center gap-2 animate-fade-in">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <span>Name updated successfully!</span>
-                    </div>
-                  )}
-
+                {onOpenAuth && (
                   <button
-                    type="submit"
-                    className="w-full h-10 rounded-xl text-white font-medium text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenAuth();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-white text-xs font-semibold shadow-xs transition cursor-pointer"
                     style={{ backgroundColor: currentThemeConfig.hex }}
                   >
-                    <span>Save Profile Name</span>
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In / Create Account</span>
                   </button>
-                </form>
+                )}
               </div>
-
-            </div>
+            )
           )}
-
         </div>
 
         {/* Footer */}
@@ -415,7 +499,6 @@ export const ProfileAppearanceModal: React.FC<ProfileAppearanceModalProps> = ({
             Done
           </button>
         </div>
-
       </div>
     </div>
   );

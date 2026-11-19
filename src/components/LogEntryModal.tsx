@@ -114,7 +114,7 @@ export const LogEntryModal: React.FC<LogEntryModalProps> = ({
         setMediaDataUrl(posterUrl);
         setMediaType('video');
       } else if (file.type.startsWith('image/')) {
-        const compressedUrl = await compressImageFile(file, 900, 0.72);
+        const compressedUrl = await compressImageFile(file, 820, 0.7);
         setMediaDataUrl(compressedUrl);
         setMediaType('image');
       } else {
@@ -489,7 +489,8 @@ export const LogEntryModal: React.FC<LogEntryModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            className="flex-[2] h-12 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-medium text-sm shadow-xs flex items-center justify-center gap-2 transition active:scale-[0.99] cursor-pointer"
+            className="flex-[2] h-12 rounded-xl text-white font-medium text-sm shadow-xs flex items-center justify-center gap-2 transition active:scale-[0.99] cursor-pointer"
+            style={{ backgroundColor: 'var(--color-theme-primary)' }}
           >
             <Check className="w-4 h-4" />
             <span>Save to Diary</span>

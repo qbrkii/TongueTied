@@ -176,7 +176,8 @@ export const ChallengeCreationHubModal: React.FC<ChallengeCreationHubModalProps>
               onClose();
               onOpenPreferences();
             }}
-            className="text-sky-600 hover:text-sky-800 font-medium cursor-pointer"
+            className="font-medium cursor-pointer hover:underline"
+            style={{ color: 'var(--color-theme-primary)' }}
           >
             Edit Preferences
           </button>

@@ -2,13 +2,17 @@
   "entities": {
     "user": {
       "title": "UserProfile",
-      "description": "User profile and personal preferences",
+      "description": "User profile, onboarding state, practice preferences, and appearance settings",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "The unique Firebase Auth user ID" },
+        "uid": { "type": "string", "description": "Unique Firebase Auth user ID" },
         "email": { "type": "string", "description": "User email address" },
         "displayName": { "type": "string", "description": "Display name or nickname" },
-        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" }
+        "createdAt": { "type": "string", "description": "ISO timestamp of account creation" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of last profile update" },
+        "onboarded": { "type": "boolean", "description": "Whether onboarding has been completed" },
+        "preferences": { "type": "object", "description": "Target language, proficiency, topics, difficulty, and social context" },
+        "themePreferences": { "type": "object", "description": "Color theme and display density format" }
       },
       "required": ["uid"]
     },
@@ -28,12 +32,15 @@
         "beforeMood": { "type": "string", "description": "Feeling before challenge" },
         "afterMood": { "type": "string", "description": "Feeling after challenge" },
         "surprise": { "type": "string", "description": "What surprised the user" },
-        "photoUrl": { "type": "string", "description": "Compressed photo data URL or image link" },
-        "languageAttempted": { "type": "string", "description": "Target foreign language" },
+        "photoUrl": { "type": "string", "description": "Compressed photo data URL" },
+        "videoPosterUrl": { "type": "string", "description": "Compressed video thumbnail URL" },
+        "mediaType": { "type": "string", "enum": ["image", "video"], "description": "Media attachment type" },
+        "locationName": { "type": "string", "description": "Optional venue or neighborhood note" },
+        "languageAttempted": { "type": "string", "description": "Target foreign language or mode" },
         "wordsSpoken": { "type": "string", "description": "Foreign phrases attempted" },
         "isFavorite": { "type": "boolean", "description": "Favorited reflection" }
       },
-      "required": ["id", "userId", "challengeId", "challengeTitle", "date", "timestamp", "description"]
+      "required": ["id", "userId", "challengeId", "challengeTitle", "challengeDifficulty", "date", "timestamp", "description", "beforeMood", "afterMood", "isFavorite"]
     },
     "customChallenge": {
       "title": "CustomChallenge",
@@ -45,16 +52,46 @@
         "title": { "type": "string", "description": "Title of challenge" },
         "instructions": { "type": "string", "description": "Challenge steps" },
         "difficulty": { "type": "string", "enum": ["Gentle", "Brave", "Bold"], "description": "Difficulty level" },
+        "setting": { "type": "string", "enum": ["public place", "school", "online"], "description": "Practice setting" },
         "estimatedTime": { "type": "string", "description": "Time needed" },
-        "whyThisMatters": { "type": "string", "description": "Empathy insight" }
+        "whyThisMatters": { "type": "string", "description": "Empathy insight" },
+        "practicalTip": { "type": "string", "description": "Practical guidance" },
+        "safetyNote": { "type": "string", "description": "Respect and safety reminder" },
+        "isCustom": { "type": "boolean", "description": "Marks custom challenge" },
+        "isAiGenerated": { "type": "boolean", "description": "Marks AI-generated challenge" },
+        "category": { "type": "string", "description": "Challenge category" },
+        "language": { "type": "string", "description": "Target language" },
+        "topic": { "type": "string", "description": "Optional topic" },
+        "isPublic": { "type": "boolean", "description": "Public or private preference" },
+        "examplePhrase": { "type": "object", "description": "Optional example phrase" },
+        "helperPhrases": { "type": "array", "description": "Optional helper phrases" }
       },
       "required": ["id", "userId", "title", "instructions", "difficulty"]
+    },
+    "customPhrase": {
+      "title": "CustomPhrase",
+      "description": "User saved comfort kit phrase with public/private visibility",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique phrase identifier" },
+        "userId": { "type": "string", "description": "Owner user ID" },
+        "phrase": { "type": "string", "description": "Phrase text in target language" },
+        "pronunciation": { "type": "string", "description": "Optional phonetic pronunciation guide" },
+        "meaning": { "type": "string", "description": "Meaning or translation" },
+        "language": { "type": "string", "description": "Language name" },
+        "langCode": { "type": "string", "description": "BCP-47 speech synthesis code" },
+        "isCustom": { "type": "boolean", "description": "Custom user phrase flag" },
+        "isPublic": { "type": "boolean", "description": "Public or private preference" },
+        "topic": { "type": "string", "description": "Optional topic" },
+        "createdAt": { "type": "number", "description": "Epoch timestamp of creation" }
+      },
+      "required": ["id", "userId", "phrase", "meaning", "language", "langCode"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "user",
-      "description": "User profile and account settings"
+      "description": "User profile, onboarding state, practice preferences, and appearance settings"
     },
     "/users/{userId}/entries/{entryId}": {
       "schema": "diaryEntry",
@@ -63,6 +100,10 @@
     "/users/{userId}/customChallenges/{challengeId}": {
       "schema": "customChallenge",
       "description": "Custom challenges created by the user"
+    },
+    "/users/{userId}/customPhrases/{phraseId}": {
+      "schema": "customPhrase",
+      "description": "Custom comfort kit phrases saved by the user"
     }
   }
 }

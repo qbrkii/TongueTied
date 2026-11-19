@@ -353,8 +353,9 @@ export const CustomChallengeModal: React.FC<CustomChallengeModalProps> = ({
               aria-checked={isPublic}
               onClick={() => setIsPublic(!isPublic)}
               className={`w-11 h-6 rounded-full transition-colors p-0.5 cursor-pointer flex items-center ${
-                isPublic ? 'bg-sky-600 justify-end' : 'bg-slate-300 justify-start'
+                isPublic ? 'justify-end' : 'bg-slate-300 justify-start'
               }`}
+              style={isPublic ? { backgroundColor: 'var(--color-theme-primary)' } : undefined}
             >
               <div className="w-5 h-5 rounded-full bg-white shadow-2xs" />
             </button>
@@ -374,7 +375,8 @@ export const CustomChallengeModal: React.FC<CustomChallengeModalProps> = ({
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+            className="px-5 py-2 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer"
+            style={{ backgroundColor: 'var(--color-theme-primary)' }}
           >
             {editingChallenge ? 'Save Changes' : 'Save Challenge'}
           </button>

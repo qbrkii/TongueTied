@@ -87,7 +87,7 @@ Return ONLY a valid JSON object matching this schema:
 
   try {
     let responseText = '';
-    const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+    const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-4-hydrogen'];
     let lastError: any = null;
 
     for (const modelName of modelsToTry) {
@@ -135,76 +135,7 @@ Return ONLY a valid JSON object matching this schema:
   }
 });
 
-function getFallbackChallenge(prefs: any) {
-  const lang = prefs.language || 'Spanish';
-  const diff = prefs.difficultyPreference === 'Adaptive' ? 'Gentle' : (prefs.difficultyPreference || 'Gentle');
-  
-  if (diff === 'Brave') {
-    return {
-      title: 'The Learner’s Confession',
-      instructions: `During a simple purchase or interaction, politely say in ${lang}: "I am learning your language, thank you for your patience!"`,
-      difficulty: 'Brave',
-      estimatedTime: '3–5 mins',
-      whyThisMatters: 'Vulnerability disarms awkwardness and invites tremendous warmth and encouragement from locals.',
-      practicalTip: 'Deliver it with a lighthearted smile; people almost always appreciate the effort.',
-      safetyNote: 'Respect the person\'s boundaries and personal space.',
-      topic: (prefs.topics && prefs.topics[0]) || 'Everyday Errands',
-      examplePhrase: {
-        phrase: 'Estoy aprendiendo su idioma, gracias por su paciencia',
-        pronunciation: 'ehs-TOY ah-pren-dee-EN-doh soo ee-dee-OH-mah...',
-        meaning: 'I am learning your language, thank you for your patience',
-      },
-    };
-  }
-
-  if (diff === 'Bold') {
-    return {
-      title: 'Neighborhood Curiosity',
-      instructions: `Ask a local shopkeeper or vendor: "What is your favorite local dish or spot nearby?" exclusively in ${lang}.`,
-      difficulty: 'Bold',
-      estimatedTime: '6–8 mins',
-      whyThisMatters: 'Transitions beyond transactional requests into meaningful cultural community dialogue.',
-      practicalTip: 'Maintain warm, open posture and listen attentively.',
-      safetyNote: 'Only continue if the person is free and happy to chat.',
-      topic: (prefs.topics && prefs.topics[0]) || 'Food & Markets',
-      examplePhrase: {
-        phrase: '¿Cuál es un rincón favorito del barrio?',
-        pronunciation: 'kwahl ehs oon reen-KOHN fah-voh-REE-toh...',
-        meaning: 'What is a favorite spot of yours around here?',
-      },
-    };
-  }
-
-  return {
-    title: 'The Silent Affirmation & Greeting',
-    instructions: `Enter a local shop or café, catch the clerk's eye, offer a warm smile, and say a polite greeting in ${lang}.`,
-    difficulty: 'Gentle',
-    estimatedTime: '2 mins',
-    whyThisMatters: 'Breaks the initial physical friction of speaking without the pressure of a full conversation.',
-    practicalTip: 'Take a slow breath before entering. A sincere smile transcends grammar.',
-    safetyNote: 'If the person is on a phone call or busy with a line, choose another relaxed moment.',
-    topic: (prefs.topics && prefs.topics[0]) || 'Coffee & Cafés',
-    examplePhrase: {
-      phrase: '¡Hola! Buenos días',
-      pronunciation: 'OH-lah BWEH-nohs DEE-ahs',
-      meaning: 'Hello! Good morning',
-    },
-  };
-}
-
-function getFallbackSequence(prefs: any, count: number) {
-  const list = [];
-  const difficulties = ['Gentle', 'Brave', 'Bold'];
-  for (let i = 0; i < count; i++) {
-    const ratio = i / Math.max(1, count - 1);
-    const diff = ratio < 0.4 ? 'Gentle' : ratio < 0.8 ? 'Brave' : 'Bold';
-    const base = getFallbackChallenge({ ...prefs, difficultyPreference: diff });
-    list.push({ ...base, difficulty: diff });
-  }
-  return list;
-}
-
-// 2. Generate Arranged Sequence of Challenges via Gemini 3.8 Flash
+// 2. Generate Arranged Sequence of Challenges via Gemini
 app.post('/api/gemini/generate-sequence', async (req: Request, res: Response) => {
   const { prefs, count = 3 } = req.body || {};
   if (!prefs) {
@@ -257,7 +188,7 @@ Return ONLY a valid JSON array of ${safeCount} objects:
 
   try {
     let responseText = '';
-    const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+    const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-4-hydrogen'];
     let lastError: any = null;
 
     for (const modelName of modelsToTry) {
@@ -307,7 +238,7 @@ Return ONLY a valid JSON array of ${safeCount} objects:
 
 // 3. General Generate Content Endpoint
 app.post('/api/gemini/generate', async (req: Request, res: Response) => {
-  const { prompt, model = 'gemini-3.8-flash', systemInstruction } = req.body || {};
+  const { prompt, model = 'gemini-4-hydrogen', systemInstruction } = req.body || {};
   if (!prompt) {
     return res.status(400).json({ success: false, error: 'Missing prompt parameter.' });
   }
@@ -337,7 +268,7 @@ app.post('/api/gemini/generate', async (req: Request, res: Response) => {
 
 // 4. Server-Sent Events (SSE) Streaming Endpoint
 app.post('/api/gemini/stream', async (req: Request, res: Response) => {
-  const { prompt, model = 'gemini-3.8-flash', systemInstruction } = req.body || {};
+  const { prompt, model = 'gemini-4-hydrogen', systemInstruction } = req.body || {};
   if (!prompt) {
     return res.status(400).json({ error: 'Missing prompt parameter.' });
   }
@@ -390,7 +321,7 @@ wss.on('connection', (ws: WebSocket) => {
       if (parsed.type === 'live_prompt' || parsed.type === 'generate') {
         const userPrompt = parsed.prompt || '';
         const stream = await ai.models.generateContentStream({
-          model: 'gemini-3.8-flash',
+          model: 'gemini-4-hydrogen',
           contents: userPrompt,
         });
 

@@ -171,7 +171,8 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
                   onClose();
                   onLogExperience();
                 }}
-                className="w-full h-11 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                className="w-full h-11 rounded-xl text-white font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                style={{ backgroundColor: 'var(--color-theme-primary)' }}
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Mark as done & log diary</span>
@@ -199,7 +200,8 @@ export const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
                     onAccept();
                     onClose();
                   }}
-                  className="flex-1 h-11 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                  className="flex-1 h-11 rounded-xl text-white font-medium text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-xs"
+                  style={{ backgroundColor: 'var(--color-theme-primary)' }}
                 >
                   Accept challenge
                 </button>

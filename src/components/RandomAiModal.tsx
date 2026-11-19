@@ -118,7 +118,10 @@ export const RandomAiModal: React.FC<RandomAiModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-sky-50/50">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center shadow-xs">
+            <div
+              className="w-8 h-8 rounded-xl text-white flex items-center justify-center shadow-xs"
+              style={{ backgroundColor: 'var(--color-theme-primary)' }}
+            >
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
@@ -189,7 +192,8 @@ export const RandomAiModal: React.FC<RandomAiModalProps> = ({
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  className="px-5 py-2.5 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                  style={{ backgroundColor: 'var(--color-theme-primary)' }}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Retry AI Generation</span>
@@ -315,7 +319,8 @@ export const RandomAiModal: React.FC<RandomAiModalProps> = ({
                   onUseChallenge(generatedChallenge);
                   onClose();
                 }}
-                className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2.5 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                style={{ backgroundColor: 'var(--color-theme-primary)' }}
               >
                 <Check className="w-4 h-4" />
                 <span>Use Challenge</span>

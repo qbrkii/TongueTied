@@ -1,317 +1,330 @@
-import React, { useState } from 'react';
-import { 
-  X, Mail, Lock, User as UserIcon, LogOut, CheckCircle2, 
-  AlertCircle, Cloud, Sparkles, Plus, Users, ShieldCheck 
+import React, { useState, useEffect } from 'react';
+import {
+  HeartHandshake,
+  Mail,
+  Lock,
+  User as UserIcon,
+  AlertCircle,
+  Loader2,
+  X,
 } from 'lucide-react';
-import { 
-  auth, 
-  signInWithPopup, 
+import {
+  auth,
   GoogleAuthProvider,
-  fbSignOut 
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
 } from '../lib/firebase';
-import { AppAccount } from '../types';
-import { getKnownAccounts } from '../utils/storage';
+import { ThemePreferences } from '../types';
+import { getThemeConfig } from '../utils/theme';
 
 interface AuthModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  currentAccount: AppAccount | null;
-  onSelectAccount: (account: AppAccount) => void;
-  onSignOutAccount: () => void;
+  canDismiss?: boolean;
+  promptReason?: 'diary' | 'account';
+  onClose?: () => void;
+  themePreferences: ThemePreferences;
+}
+
+function getFriendlyAuthError(err: any): string {
+  const code = err?.code || '';
+  if (code === 'auth/popup-closed-by-user') {
+    return 'Google sign-in popup was closed before finishing.';
+  }
+  if (code === 'auth/popup-blocked') {
+    return 'Popup was blocked by your browser. Please allow popups for this site and try again.';
+  }
+  if (code === 'auth/operation-not-allowed') {
+    return 'Email/Password sign-in is not enabled yet in Firebase Console. You can sign in with Google right now, or enable Email/Password under Authentication > Sign-in method.';
+  }
+  if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+    return 'Incorrect email or password. Please check and try again.';
+  }
+  if (code === 'auth/email-already-in-use') {
+    return 'An account with this email already exists. Try signing in instead.';
+  }
+  if (code === 'auth/weak-password') {
+    return 'Password should be at least 6 characters.';
+  }
+  if (code === 'auth/invalid-email') {
+    return 'Please enter a valid email address.';
+  }
+  if (code === 'auth/too-many-requests') {
+    return 'Too many attempts. Please wait a moment and try again.';
+  }
+  return err?.message || 'Unable to sign in right now. Please try again.';
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
+  canDismiss = true,
+  promptReason = 'diary',
   onClose,
-  currentAccount,
-  onSelectAccount,
-  onSignOutAccount,
+  themePreferences,
 }) => {
-  const [tab, setTab] = useState<'create' | 'switch'>('create');
-  const [name, setName] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>(
+    promptReason === 'diary' ? 'signup' : 'signin'
+  );
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMode(promptReason === 'diary' ? 'signup' : 'signin');
+      setError(null);
+      setIsLoading(false);
+    }
+  }, [isOpen, promptReason]);
 
   if (!isOpen) return null;
 
-  const knownAccounts = getKnownAccounts();
+  const theme = getThemeConfig(themePreferences.colorTheme);
 
-  // Create or sign into a person's dedicated profile
-  const handleCreateOrSignIn = (e: React.FormEvent) => {
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      if (onClose) onClose();
+    } catch (err: any) {
+      setError(getFriendlyAuthError(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const trimmedName = name.trim();
     const trimmedEmail = email.trim();
-
-    if (!trimmedName && !trimmedEmail) {
-      setError('Please provide a name or email address.');
+    if (!trimmedEmail || !password) {
+      setError('Please enter your email and password.');
+      return;
+    }
+    if (mode === 'signup' && password.length < 6) {
+      setError('Password must be at least 6 characters.');
       return;
     }
 
-    const effectiveName = trimmedName || (trimmedEmail ? trimmedEmail.split('@')[0] : 'Member');
-    const effectiveEmail = trimmedEmail || `${effectiveName.toLowerCase().replace(/[^a-z0-9]/g, '')}@tonguetied.local`;
-    
-    // Check if an account already exists with this email or name
-    const existing = knownAccounts.find(
-      a => (trimmedEmail && a.email.toLowerCase() === trimmedEmail.toLowerCase()) ||
-           (!trimmedEmail && a.displayName.toLowerCase() === effectiveName.toLowerCase())
-    );
-
-    if (existing) {
-      // Sign into existing account
-      onSelectAccount(existing);
-      onClose();
-      return;
-    }
-
-    // Create unique ID for this person
-    const newUid = 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
-    const newAccount: AppAccount = {
-      uid: newUid,
-      email: effectiveEmail,
-      displayName: effectiveName,
-      createdAt: Date.now(),
-    };
-
-    onSelectAccount(newAccount);
-    onClose();
-  };
-
-  // Google Sign-in flow (configured by Firebase project)
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setLoading(true);
+    setIsLoading(true);
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const account: AppAccount = {
-        uid: user.uid,
-        email: user.email || 'google-user@tonguetied.app',
-        displayName: user.displayName || user.email?.split('@')[0] || 'Explorer',
-        createdAt: Date.now(),
-      };
-      onSelectAccount(account);
-      onClose();
-    } catch (err: any) {
-      console.warn('Google sign in warning:', err);
-      // If popup was closed or network error, show helpful message
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('Google sign-in popup was closed.');
-      } else if (err.code === 'auth/operation-not-allowed') {
-        setError('Google sign-in is completing. You can create an account with your name below instantly.');
+      if (mode === 'signin') {
+        await signInWithEmailAndPassword(auth, trimmedEmail, password);
       } else {
-        setError(err.message || 'Could not sign in with Google. You can create a profile below.');
+        const cred = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
+        const cleanName = displayName.trim() || trimmedEmail.split('@')[0] || 'Explorer';
+        await updateProfile(cred.user, { displayName: cleanName });
       }
+      if (onClose) onClose();
+    } catch (err: any) {
+      setError(getFriendlyAuthError(err));
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  };
-
-  const handleGuestAccount = () => {
-    const guestUid = 'guest_' + Math.random().toString(36).substring(2, 9);
-    const guestAccount: AppAccount = {
-      uid: guestUid,
-      email: `guest-${guestUid.slice(-4)}@tonguetied.app`,
-      displayName: `Guest (${guestUid.slice(-4)})`,
-      isGuest: true,
-      createdAt: Date.now(),
-    };
-    onSelectAccount(guestAccount);
-    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div 
-        className="w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-xl border border-slate-200 text-slate-800 relative flex flex-col overflow-hidden max-h-[90vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50/80">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900 leading-tight">
-                {currentAccount ? 'Account & Profiles' : 'Create an Account'}
-              </h2>
-            </div>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-xs overflow-y-auto animate-fade-in">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 sm:p-8 text-slate-800 relative space-y-6 my-auto">
+        {canDismiss && onClose && (
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
-            className="w-7 h-7 rounded-full hover:bg-slate-200/60 text-slate-400 hover:text-slate-700 flex items-center justify-center transition cursor-pointer"
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
+        )}
+
+        {/* Brand Header */}
+        <div className="text-center space-y-2.5">
+          <div
+            className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white shadow-sm"
+            style={{ backgroundColor: theme.hex }}
+          >
+            <HeartHandshake className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-serif font-bold text-slate-900">
+              {promptReason === 'diary'
+                ? 'Save Your Challenge to Your Diary'
+                : 'Sign In or Create Account'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
+              {promptReason === 'diary'
+                ? 'Create a free account (or sign in) to save your diary reflection, track streaks, and customize your profile.'
+                : 'Sign in with Google or Email to save your diary reflections, streaks, and preferences across sessions.'}
+            </p>
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="p-5 space-y-4 overflow-y-auto">
-          {/* Active Account Status */}
-          {currentAccount && (
-            <div className="bg-sky-50/70 border border-sky-100 rounded-2xl p-3.5 flex items-center justify-between">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center font-bold text-sm shadow-2xs flex-shrink-0">
-                  {currentAccount.displayName ? currentAccount.displayName[0].toUpperCase() : 'U'}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-900 truncate">
-                    {currentAccount.displayName}
-                  </div>
-                  <div className="text-[11px] text-slate-500 truncate font-mono">
-                    {currentAccount.email}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  onSignOutAccount();
-                  try { fbSignOut(auth); } catch {}
-                }}
-                className="px-2 py-1 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 text-[11px] font-medium transition cursor-pointer flex items-center gap-1 flex-shrink-0"
-              >
-                <LogOut className="w-3 h-3" />
-                <span>Switch</span>
-              </button>
-            </div>
-          )}
-
-          {/* Quick Google Sign In */}
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="w-full h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium text-xs shadow-2xs flex items-center justify-center gap-2 transition cursor-pointer"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-            <div className="relative flex items-center justify-center my-2">
-              <div className="border-t border-slate-200 w-full" />
-              <span className="bg-white px-2 text-[10px] uppercase tracking-wider text-slate-400 font-medium absolute">
-                or personal profile
-              </span>
-            </div>
+        {/* Error Banner */}
+        {error && (
+          <div className="p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2 leading-relaxed">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" />
+            <span>{error}</span>
           </div>
+        )}
 
-          {/* Form to create/set a profile for each person */}
-          <form onSubmit={handleCreateOrSignIn} className="space-y-3">
+        {/* Google Sign-In Button */}
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isLoading}
+          className="w-full h-11 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-semibold text-sm flex items-center justify-center gap-2.5 transition cursor-pointer shadow-2xs disabled:opacity-60"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
+            />
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+
+        {/* Divider */}
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-slate-200 w-full" />
+          <span className="bg-white px-3 text-[11px] uppercase tracking-wider text-slate-400 font-medium">
+            or with email
+          </span>
+          <div className="border-t border-slate-200 w-full" />
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-100 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => {
+              setMode('signin');
+              setError(null);
+            }}
+            className={`py-2 rounded-lg transition cursor-pointer ${
+              mode === 'signin'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode('signup');
+              setError(null);
+            }}
+            className={`py-2 rounded-lg transition cursor-pointer ${
+              mode === 'signup'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            Create Account
+          </button>
+        </div>
+
+        {/* Email & Password Form */}
+        <form onSubmit={handleEmailSubmit} className="space-y-3.5">
+          {mode === 'signup' && (
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Your Name / Nickname
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+                Name (Optional)
               </label>
               <div className="relative">
-                <UserIcon className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Maya, Jordan, Alex"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8.5 pr-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:bg-white"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="How should we greet you?"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:bg-white"
                 />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-slate-600 mb-1">
-                Email Address (Optional)
-              </label>
-              <div className="relative">
-                <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="maya@example.com (optional)"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8.5 pr-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:bg-white"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-start gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full h-10 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs shadow-xs flex items-center justify-center gap-1.5 transition active:scale-[0.99] cursor-pointer mt-1"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{currentAccount ? 'Create / Switch Profile' : 'Start With This Profile'}</span>
-            </button>
-          </form>
-
-          {/* Known accounts list for switching */}
-          {knownAccounts.length > 0 && (
-            <div className="pt-2 border-t border-slate-100">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-2">
-                Existing Accounts on this Device
-              </span>
-              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                {knownAccounts.map((acc) => {
-                  const isActive = currentAccount?.uid === acc.uid;
-                  return (
-                    <button
-                      key={acc.uid}
-                      type="button"
-                      onClick={() => {
-                        onSelectAccount(acc);
-                        onClose();
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer border ${
-                        isActive 
-                          ? 'bg-sky-50/70 border-sky-200 text-sky-900 font-medium' 
-                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-md bg-white border border-slate-200 flex items-center justify-center text-[11px] font-bold text-slate-700">
-                          {acc.displayName ? acc.displayName[0].toUpperCase() : 'U'}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs truncate">{acc.displayName}</div>
-                        </div>
-                      </div>
-                      {isActive && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
               </div>
             </div>
           )}
 
-          {/* Quick guest button */}
-          <div className="text-center pt-1">
-            <button
-              type="button"
-              onClick={handleGuestAccount}
-              className="text-[11px] text-slate-500 hover:text-slate-800 transition cursor-pointer underline underline-offset-2"
-            >
-              Or continue as temporary guest
-            </button>
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:bg-white"
+              />
+            </div>
           </div>
 
-        </div>
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:bg-white"
+              />
+            </div>
+          </div>
 
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-11 rounded-2xl text-white font-semibold text-sm flex items-center justify-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-60"
+            style={{ backgroundColor: theme.hex }}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{mode === 'signin' ? 'Signing in...' : 'Creating account...'}</span>
+              </>
+            ) : (
+              <span>{mode === 'signin' ? 'Sign In with Email' : 'Create Email Account'}</span>
+            )}
+          </button>
+        </form>
+
+        {canDismiss && onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full text-center text-xs text-slate-500 hover:text-slate-800 pt-1 cursor-pointer"
+          >
+            Not right now
+          </button>
+        )}
       </div>
     </div>
   );

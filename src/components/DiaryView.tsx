@@ -11,6 +11,7 @@ import {
 
 interface DiaryViewProps {
   entries: DiaryEntry[];
+  isAuthenticated?: boolean;
   onSelectEntry: (entry: DiaryEntry) => void;
   onNewEntry: () => void;
   onToggleFavorite: (id: string) => void;
@@ -19,6 +20,7 @@ interface DiaryViewProps {
 
 export const DiaryView: React.FC<DiaryViewProps> = ({
   entries,
+  isAuthenticated = true,
   onSelectEntry,
   onNewEntry,
   onToggleFavorite,
@@ -68,7 +70,8 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
             <button
               type="button"
               onClick={onBackToToday}
-              className="text-xs text-sky-700 hover:underline font-semibold mb-1 flex items-center gap-1 cursor-pointer"
+              className="text-xs hover:underline font-semibold mb-1 flex items-center gap-1 cursor-pointer"
+              style={{ color: 'var(--color-theme-primary)' }}
             >
               <span>← Back to Today</span>
             </button>
@@ -150,19 +153,22 @@ export const DiaryView: React.FC<DiaryViewProps> = ({
           </div>
           <div>
             <h3 className="text-base font-serif font-bold text-slate-900">
-              Your diary is waiting
+              {isAuthenticated ? 'Your diary is waiting' : 'Sign in to log your diary'}
             </h3>
             <p className="text-slate-500 text-xs mt-1 max-w-xs mx-auto">
-              Reflections on everyday empathy and human interaction will appear here once you complete a challenge.
+              {isAuthenticated
+                ? 'Reflections on everyday empathy and human interaction will appear here once you complete a challenge.'
+                : 'Create a free account or sign in whenever you’re ready to save your personal reflections.'}
             </p>
           </div>
           <button
             type="button"
             onClick={onNewEntry}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white font-medium text-xs shadow-xs transition cursor-pointer"
+            style={{ backgroundColor: 'var(--color-theme-primary)' }}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Write a note</span>
+            <span>{isAuthenticated ? 'Write a note' : 'Sign in to write a note'}</span>
           </button>
         </div>
       ) : filteredEntries.length === 0 ? (

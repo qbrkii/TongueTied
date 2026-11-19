@@ -60,7 +60,8 @@ export const ChallengesLibraryView: React.FC<ChallengesLibraryViewProps> = ({
             <button
               type="button"
               onClick={onBackToToday}
-              className="text-xs text-sky-700 hover:underline font-semibold mb-1 flex items-center gap-1 cursor-pointer"
+              className="text-xs hover:underline font-semibold mb-1 flex items-center gap-1 cursor-pointer"
+              style={{ color: 'var(--color-theme-primary)' }}
             >
               <span>← Back to Today</span>
             </button>
@@ -77,7 +78,8 @@ export const ChallengesLibraryView: React.FC<ChallengesLibraryViewProps> = ({
           <button
             type="button"
             onClick={onOpenCreateCustom}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-white font-medium text-xs shadow-xs transition cursor-pointer"
+            style={{ backgroundColor: 'var(--color-theme-primary)' }}
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Create Custom</span>
@@ -216,9 +218,10 @@ export const ChallengesLibraryView: React.FC<ChallengesLibraryViewProps> = ({
               onClick={() => onSelectChallenge(item)}
               className={`bg-white rounded-2xl p-4 border transition cursor-pointer relative group flex items-start justify-between gap-3 ${
                 isTodayActive 
-                  ? 'border-sky-300 ring-1 ring-sky-300 shadow-2xs' 
+                  ? 'ring-1 shadow-2xs' 
                   : 'border-slate-200/90 hover:border-slate-300 shadow-2xs'
               }`}
+              style={isTodayActive ? { borderColor: 'var(--color-theme-primary)' } : undefined}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -249,7 +252,13 @@ export const ChallengesLibraryView: React.FC<ChallengesLibraryViewProps> = ({
                     </span>
                   )}
                   {isTodayActive && (
-                    <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200">
+                    <span
+                      className="text-[10px] font-bold px-1.5 py-0.2 rounded border"
+                      style={{
+                        color: 'var(--color-theme-primary)',
+                        borderColor: 'var(--color-theme-primary)',
+                      }}
+                    >
                       Active
                     </span>
                   )}

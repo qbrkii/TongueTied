@@ -2,28 +2,257 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny all
+    // Global Default-Deny Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Health / connection test doc
+    // Health / connection check document
     match /test/{docId} {
-      allow read: if true;
+      allow get: if docId == 'connection';
     }
 
-    // User root document
+    // Core Security & Validation Primitives
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isValidOptionalBool(data, key) {
+      return !(key in data) || (data[key] is bool);
+    }
+
+    // Validation Blueprint: User Profile & Settings
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['uid']) &&
+        data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'createdAt', 'updatedAt',
+          'onboarded', 'preferences', 'themePreferences'
+        ]) &&
+        data.uid is string && data.uid == userId &&
+        isValidOptionalString(data, 'email', 256) &&
+        isValidOptionalString(data, 'displayName', 100) &&
+        isValidOptionalString(data, 'createdAt', 64) &&
+        isValidOptionalString(data, 'updatedAt', 64) &&
+        isValidOptionalBool(data, 'onboarded') &&
+        (!('preferences' in data) || (
+          data.preferences is map &&
+          data.preferences.keys().hasOnly([
+            'language', 'proficiency', 'topics', 'difficultyPreference',
+            'socialSettings', 'communityContext'
+          ]) &&
+          isValidOptionalString(data.preferences, 'language', 64) &&
+          isValidOptionalString(data.preferences, 'proficiency', 64) &&
+          isValidOptionalString(data.preferences, 'difficultyPreference', 32) &&
+          isValidOptionalString(data.preferences, 'socialSettings', 300) &&
+          isValidOptionalString(data.preferences, 'communityContext', 500) &&
+          (!('topics' in data.preferences) || (
+            data.preferences.topics is list &&
+            data.preferences.topics.size() <= 20 &&
+            (data.preferences.topics.size() == 0 || data.preferences.topics[0] is string)
+          ))
+        )) &&
+        (!('themePreferences' in data) || (
+          data.themePreferences is map &&
+          data.themePreferences.keys().hasOnly(['colorTheme', 'displayFormat']) &&
+          isValidOptionalString(data.themePreferences, 'colorTheme', 32) &&
+          isValidOptionalString(data.themePreferences, 'displayFormat', 32)
+        ));
+    }
+
+    // Validation Blueprint: Diary Entry
+    function isValidDiaryEntry(data, userId, entryId) {
+      return data.keys().hasAll([
+          'id', 'userId', 'challengeId', 'challengeTitle',
+          'challengeDifficulty', 'date', 'timestamp', 'description',
+          'beforeMood', 'afterMood', 'isFavorite'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'challengeId', 'challengeTitle', 'challengeDifficulty',
+          'date', 'timestamp', 'description', 'beforeMood', 'afterMood',
+          'surprise', 'photoUrl', 'videoPosterUrl', 'mediaType',
+          'isFavorite', 'locationName', 'languageAttempted', 'wordsSpoken'
+        ]) &&
+        data.id is string && data.id == entryId &&
+        data.userId is string && data.userId == userId &&
+        data.challengeId is string && data.challengeId.size() <= 128 &&
+        data.challengeTitle is string && data.challengeTitle.size() >= 1 && data.challengeTitle.size() <= 200 &&
+        data.challengeDifficulty in ['Gentle', 'Brave', 'Bold'] &&
+        data.date is string && data.date.size() == 10 &&
+        data.timestamp is number && data.timestamp > 0 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 5000 &&
+        data.beforeMood is string && data.beforeMood.size() <= 40 &&
+        data.afterMood is string && data.afterMood.size() <= 40 &&
+        data.isFavorite is bool &&
+        isValidOptionalString(data, 'surprise', 500) &&
+        isValidOptionalString(data, 'photoUrl', 750000) &&
+        isValidOptionalString(data, 'videoPosterUrl', 750000) &&
+        (!('mediaType' in data) || data.mediaType in ['image', 'video']) &&
+        isValidOptionalString(data, 'locationName', 200) &&
+        isValidOptionalString(data, 'languageAttempted', 100) &&
+        isValidOptionalString(data, 'wordsSpoken', 500);
+    }
+
+    // Validation Blueprint: Custom Challenge
+    function isValidCustomChallenge(data, userId, challengeId) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'instructions', 'difficulty']) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'title', 'instructions', 'difficulty', 'setting',
+          'estimatedTime', 'whyThisMatters', 'practicalTip', 'safetyNote',
+          'isCustom', 'isAiGenerated', 'category', 'suggestedProps', 'approachType',
+          'recommendedLanguages', 'helperPhrases', 'language', 'topic',
+          'examplePhrase', 'isPublic', 'sequenceOrder', 'sequenceTotal',
+          'isSequenceStep', 'completed', 'saved'
+        ]) &&
+        data.id is string && data.id == challengeId &&
+        data.userId is string && data.userId == userId &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        data.instructions is string && data.instructions.size() >= 1 && data.instructions.size() <= 1000 &&
+        data.difficulty in ['Gentle', 'Brave', 'Bold'] &&
+        (!('setting' in data) || data.setting in ['public place', 'school', 'online']) &&
+        isValidOptionalString(data, 'estimatedTime', 64) &&
+        isValidOptionalString(data, 'whyThisMatters', 500) &&
+        isValidOptionalString(data, 'practicalTip', 500) &&
+        isValidOptionalString(data, 'safetyNote', 500) &&
+        isValidOptionalBool(data, 'isCustom') &&
+        isValidOptionalBool(data, 'isAiGenerated') &&
+        isValidOptionalString(data, 'category', 64) &&
+        isValidOptionalString(data, 'suggestedProps', 200) &&
+        isValidOptionalString(data, 'approachType', 32) &&
+        (!('recommendedLanguages' in data) || (
+          data.recommendedLanguages is list &&
+          data.recommendedLanguages.size() <= 15 &&
+          (data.recommendedLanguages.size() == 0 || data.recommendedLanguages[0] is string)
+        )) &&
+        (!('helperPhrases' in data) || (
+          data.helperPhrases is list &&
+          data.helperPhrases.size() <= 10 &&
+          (data.helperPhrases.size() == 0 || data.helperPhrases[0] is map)
+        )) &&
+        isValidOptionalString(data, 'language', 64) &&
+        isValidOptionalString(data, 'topic', 100) &&
+        (!('examplePhrase' in data) || data.examplePhrase is map) &&
+        isValidOptionalBool(data, 'isPublic') &&
+        isValidOptionalBool(data, 'isSequenceStep') &&
+        isValidOptionalBool(data, 'completed') &&
+        isValidOptionalBool(data, 'saved');
+    }
+
+    // Validation Blueprint: Custom Comfort Kit Phrase
+    function isValidCustomPhrase(data, userId, phraseId) {
+      return data.keys().hasAll(['id', 'userId', 'phrase', 'meaning', 'language', 'langCode']) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'phrase', 'pronunciation', 'meaning',
+          'language', 'langCode', 'isCustom', 'isPublic', 'topic', 'createdAt'
+        ]) &&
+        data.id is string && data.id == phraseId &&
+        data.userId is string && data.userId == userId &&
+        data.phrase is string && data.phrase.size() >= 1 && data.phrase.size() <= 300 &&
+        isValidOptionalString(data, 'pronunciation', 300) &&
+        data.meaning is string && data.meaning.size() >= 1 && data.meaning.size() <= 300 &&
+        data.language is string && data.language.size() >= 1 && data.language.size() <= 64 &&
+        data.langCode is string && data.langCode.size() >= 2 && data.langCode.size() <= 20 &&
+        isValidOptionalBool(data, 'isCustom') &&
+        isValidOptionalBool(data, 'isPublic') &&
+        isValidOptionalString(data, 'topic', 100) &&
+        (!('createdAt' in data) || data.createdAt is number);
+    }
+
+    // User root document & subcollections
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUser(incoming(), userId);
+      allow update: if isValidId(userId) && isOwner(userId) && isValidUser(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        (!('createdAt' in existing()) || incoming().createdAt == existing().createdAt) &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'email', 'displayName', 'updatedAt', 'onboarded', 'preferences', 'themePreferences'
+        ]);
+      allow delete: if isValidId(userId) && isOwner(userId);
 
       // User's private diary entries
       match /entries/{entryId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow get: if isValidId(userId) && isValidId(entryId) && isOwner(userId) &&
+          existing().userId == request.auth.uid;
+        allow list: if isValidId(userId) && isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(entryId) && isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          isValidDiaryEntry(incoming(), userId, entryId);
+        allow update: if isValidId(userId) && isValidId(entryId) && isOwner(userId) &&
+          isValidDiaryEntry(incoming(), userId, entryId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'challengeId', 'challengeTitle', 'challengeDifficulty', 'date', 'timestamp',
+            'description', 'beforeMood', 'afterMood', 'surprise', 'photoUrl',
+            'videoPosterUrl', 'mediaType', 'isFavorite', 'locationName',
+            'languageAttempted', 'wordsSpoken'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(entryId) && isOwner(userId);
       }
 
       // User's custom challenges
       match /customChallenges/{challengeId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow get: if isValidId(userId) && isValidId(challengeId) && isOwner(userId) &&
+          existing().userId == request.auth.uid;
+        allow list: if isValidId(userId) && isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(challengeId) && isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          isValidCustomChallenge(incoming(), userId, challengeId);
+        allow update: if isValidId(userId) && isValidId(challengeId) && isOwner(userId) &&
+          isValidCustomChallenge(incoming(), userId, challengeId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'instructions', 'difficulty', 'setting', 'estimatedTime',
+            'whyThisMatters', 'practicalTip', 'safetyNote', 'isCustom',
+            'isAiGenerated', 'category', 'suggestedProps', 'approachType',
+            'recommendedLanguages', 'helperPhrases', 'language', 'topic',
+            'examplePhrase', 'isPublic', 'sequenceOrder', 'sequenceTotal',
+            'isSequenceStep', 'completed', 'saved'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(challengeId) && isOwner(userId);
+      }
+
+      // User's custom phrases
+      match /customPhrases/{phraseId} {
+        allow get: if isValidId(userId) && isValidId(phraseId) && isOwner(userId) &&
+          existing().userId == request.auth.uid;
+        allow list: if isValidId(userId) && isOwner(userId) &&
+          resource.data.userId == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(phraseId) && isOwner(userId) &&
+          exists(/databases/$(database)/documents/users/$(userId)) &&
+          isValidCustomPhrase(incoming(), userId, phraseId);
+        allow update: if isValidId(userId) && isValidId(phraseId) && isOwner(userId) &&
+          isValidCustomPhrase(incoming(), userId, phraseId) &&
+          incoming().id == existing().id &&
+          incoming().userId == existing().userId &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'phrase', 'pronunciation', 'meaning', 'language', 'langCode',
+            'isCustom', 'isPublic', 'topic', 'createdAt'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(phraseId) && isOwner(userId);
       }
     }
   }
